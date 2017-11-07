@@ -152,3 +152,5 @@ query,lon,lat,limit,expected_name,expected_housenumber,expected_street,expected_
  7 rue gombert lille,,,4,,7,Rue Gombert,Lille,
  95 bd carnot 72000 le mans maison  vendre,,,4,,95,Boulevard Carnot,Le Mans,
  35 avenue de chateau thierry la ferte sous jouarre,,,4,,35,Avenue de Chateau Thierry,La Ferté-sous-Jouarre,
+" commerces route de la béchigne, 74390 châtel, france",,,,,,Route de la Bechigne,,74390
+ bar place du 14 juillet houilles,,,4,,,Place du 14 Juillet,Houilles,
