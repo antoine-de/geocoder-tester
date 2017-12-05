@@ -66,25 +66,20 @@ class SearchException(Exception):
         results = [self.flat_result(f) for f in self.results['features']]
         lines.extend(dicts_to_table(results, keys=keys))
         lines.append('')
-        if CONFIG['GEOJSON']:
-            coordinates = None
-            if 'coordinate' in self.expected:
-                coordinates = self.expected['coordinate'].split(',')[:2]
-                coordinates.reverse()
-                properties = self.expected.copy()
-                properties.update({'expected': True})
-            elif 'lat' in self.params and 'lon' in self.params:
-                coordinates = [self.params['lon'], self.params['lat']]
-                properties = {'center': True}
-            if coordinates:
-                coordinates = list(map(float, coordinates))
-                geojson = self.to_geojson(coordinates, **properties)
-                lines.append('# Geojson:')
-                lines.append(geojson)
-                lines.append('')
+        if CONFIG['GEOJSON'] and 'coordinate' in self.expected:
+            lines.append('# Geojson:')
+            lines.append(self.to_geojson())
+            lines.append('')
         return "\n".join(lines)
 
-    def to_geojson(self, coordinates, **properties):
+    def to_geojson(self):
+        if not 'coordinate' in self.expected:
+            return ''
+        coordinates = self.expected['coordinate'].split(',')[:2]
+        coordinates.reverse()
+        coordinates = list(map(float, coordinates))
+        properties = self.expected.copy()
+        properties.update({'expected': True})
         self.results['features'].append({
             "type": "Feature",
             "geometry": {"type": "Point", "coordinates": coordinates},
@@ -132,7 +127,8 @@ def compare_values(get, expected):
 
 
 def assert_search(query, expected, limit=1,
-                  comment=None, lang=None, center=None):
+                  comment=None, lang=None, center=None,
+                  max_matches=None):
     params = {"q": query, "limit": limit}
     if lang:
         params['lang'] = lang
@@ -142,9 +138,9 @@ def assert_search(query, expected, limit=1,
     results = search(**params)
 
     def assert_expected(expected):
-        found = False
+        nb_found = 0
         for r in results['features']:
-            passed = True
+            found = True
             properties = None
             if 'geocoding' in r['properties']:
                 properties = r['properties']['geocoding']
@@ -166,15 +162,29 @@ def assert_search(query, expected, limit=1,
                         if int(deviation.meters) <= int(max_deviation):
                             continue  # Continue to other properties
                         failed.append('distance')
-                    passed = False
+                    found = False
                     failed.append(key)
-            if passed:
-                found = True
-        if not found:
+
+            if found:
+                nb_found += 1
+                if max_matches is None:
+                    break
+
+        if nb_found == 0:
             raise SearchException(
                 params=params,
                 expected=expected,
                 results=results
+            )
+        elif max_matches is not None and nb_found > max_matches:
+            message = 'Got {} matching results. Expected at most {}.'.format(
+                nb_found, max_matches
+            )
+            raise SearchException(
+                params=params,
+                expected=expected,
+                results=results,
+                message=message
             )
 
     if not isinstance(expected, list):
