@@ -66,20 +66,25 @@ class SearchException(Exception):
         results = [self.flat_result(f) for f in self.results['features']]
         lines.extend(dicts_to_table(results, keys=keys))
         lines.append('')
-        if CONFIG['GEOJSON'] and 'coordinate' in self.expected:
-            lines.append('# Geojson:')
-            lines.append(self.to_geojson())
-            lines.append('')
+        if CONFIG['GEOJSON']:
+            coordinates = None
+            if 'coordinate' in self.expected:
+                coordinates = self.expected['coordinate'].split(',')[:2]
+                coordinates.reverse()
+                properties = self.expected.copy()
+                properties.update({'expected': True})
+            elif 'lat' in self.params and 'lon' in self.params:
+                coordinates = [self.params['lon'], self.params['lat']]
+                properties = {'center': True}
+            if coordinates:
+                coordinates = list(map(float, coordinates))
+                geojson = self.to_geojson(coordinates, **properties)
+                lines.append('# Geojson:')
+                lines.append(geojson)
+                lines.append('')
         return "\n".join(lines)
 
-    def to_geojson(self):
-        if not 'coordinate' in self.expected:
-            return ''
-        coordinates = self.expected['coordinate'].split(',')[:2]
-        coordinates.reverse()
-        coordinates = list(map(float, coordinates))
-        properties = self.expected.copy()
-        properties.update({'expected': True})
+    def to_geojson(self, coordinates, **properties):
         self.results['features'].append({
             "type": "Feature",
             "geometry": {"type": "Point", "coordinates": coordinates},
@@ -216,7 +221,7 @@ def dicts_to_table(dicts, keys):
         row = {}
         l = lengths.copy()
         for key in keys:
-            value = d.get(key) or '_'
+            value = d.get(key, '—')
             if key in d['failed']:
                 l[key] += 10  # Add ANSI chars so python len will turn out.
                 value = "\033[1;4m{}\033[0m".format(value)
