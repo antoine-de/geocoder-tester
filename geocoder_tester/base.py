@@ -147,6 +147,7 @@ def assert_search(query, expected, limit=1,
         for r in results['features']:
             found = True
             properties = None
+            failed = r['properties']['failed'] = []
             if 'geocoding' in r['properties']:
                 properties = r['properties']['geocoding']
             else:
@@ -176,6 +177,7 @@ def assert_search(query, expected, limit=1,
                     break
 
         if nb_found == 0:
+
             raise SearchException(
                 params=params,
                 expected=expected,
@@ -222,6 +224,8 @@ def dicts_to_table(dicts, keys):
         l = lengths.copy()
         for key in keys:
             value = d.get(key, '—')
+            if value is None:
+                value = ''
             if key in d['failed']:
                 l[key] += 10  # Add ANSI chars so python len will turn out.
                 value = "\033[1;4m{}\033[0m".format(value)
