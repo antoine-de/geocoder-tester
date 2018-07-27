@@ -5,6 +5,8 @@ import requests
 from geopy import Point
 from geopy.distance import distance
 from unidecode import unidecode
+from collections import defaultdict
+
 
 POTSDAM = [52.3879, 13.0582]
 BERLIN = [52.519854, 13.438596]
@@ -16,9 +18,18 @@ CONFIG = {
     'MAX_RUN': 0,  # means no limit
     'GEOJSON': False,
     'FAILED': [],
+    'CHECK_DUPPLICATES': None,
 }
 
 http = requests.Session()
+
+
+def get_label_for_dupplicates(feature):
+    obj = feature['properties']['geocoding']
+    res = obj.get('label') or feature['name']
+    if obj.get('type') == 'poi':
+        res += obj.get('address', {}).get('label', '')
+    return res
 
 
 class HttpSearchException(Exception):
@@ -29,6 +40,29 @@ class HttpSearchException(Exception):
 
     def __str__(self):
         return self.error
+
+
+class DupplicatesException(Exception):
+    """ custom exception for dupplicates reporting. """
+
+    def __init__(self, dupplicates, params):
+        super().__init__()
+        self.dupplicates = dupplicates
+        self.query = params.pop('q')
+
+    def __str__(self):
+        from datadiff import diff
+        lines = [
+            '',
+            'Dupplicates found in the response',
+            "# Search was: {}".format(self.query),
+        ]
+        for key, features in self.dupplicates.items():
+            lines.append('- entry {} has been found for:'.format(key))
+            lines.extend(["{}".format(f) for f in features])
+            lines.append('diff between the first 2: {}'.format(diff(features[0], features[1])))
+
+        return "\n".join(lines)
 
 
 class SearchException(Exception):
@@ -63,7 +97,7 @@ class SearchException(Exception):
             'name', 'osm_key', 'osm_value', 'osm_id', 'housenumber', 'street',
             'postcode', 'city', 'country', 'lat', 'lon', 'distance'
         ]
-        results = [self.flat_result(f) for f in self.results['features']]
+        results = [self.flat_result(f) for f in self.results]
         lines.extend(dicts_to_table(results, keys=keys))
         lines.append('')
         if CONFIG['GEOJSON']:
@@ -85,12 +119,12 @@ class SearchException(Exception):
         return "\n".join(lines)
 
     def to_geojson(self, coordinates, **properties):
-        self.results['features'].append({
+        self.results.append({
             "type": "Feature",
             "geometry": {"type": "Point", "coordinates": coordinates},
             "properties": properties,
         })
-        return json.dumps(self.results)
+        return json.dumps({'features': self.results})
 
     def flat_result(self, result):
         out = None
@@ -134,17 +168,19 @@ def compare_values(get, expected):
 def assert_search(query, expected, limit=1,
                   comment=None, lang=None, center=None,
                   max_matches=None):
-    params = {"q": query, "limit": limit}
+    query_limit = CONFIG['CHECK_DUPPLICATES'] or limit
+    params = {"q": query, "limit": query_limit}
     if lang:
         params['lang'] = lang
     if center:
         params['lat'] = center[0]
         params['lon'] = center[1]
-    results = search(**params)
+    raw_results = search(**params)
+    results = raw_results['features'][:int(limit)]
 
     def assert_expected(expected):
         nb_found = 0
-        for r in results['features']:
+        for r in results:
             passed = True
             properties = None
             if 'geocoding' in r['properties']:
@@ -196,6 +232,26 @@ def assert_search(query, expected, limit=1,
         expected = [expected]
     for s in expected:
         assert_expected(s)
+
+    if CONFIG['CHECK_DUPPLICATES']:
+        check_dupplicates(raw_results['features'], params)
+
+
+def check_dupplicates(features, params):
+    results = defaultdict(list)
+    for f in features:
+        if 'geocoding' in f['properties']:
+            properties = f['properties']['geocoding']
+        else:
+            properties = f['properties']
+        if 'failed' in properties:
+            properties.pop('failed')
+        key = get_label_for_dupplicates(f)
+        results[key].append(f)
+
+    dupplicates = {k: dup for k, dup in results.items() if len(dup) != 1}
+    if dupplicates:
+        raise DupplicatesException(dupplicates, params)
 
 
 def dicts_to_table(dicts, keys):
