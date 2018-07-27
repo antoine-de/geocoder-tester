@@ -68,6 +68,12 @@ def pytest_addoption(parser):
         '--skip-xfail', action="store_true",  dest="skip_xfail",
         help="Do not run the tests known to fail when in compare mode."
     )
+    parser.addoption(
+        '--check-duplicates',
+        type=int,
+        dest="check_duplicates",
+        help="Activates the check that there is no duplicate in the nth first results"
+    )
 
 
 def pytest_configure(config):
@@ -75,6 +81,7 @@ def pytest_configure(config):
     CONFIG['MAX_RUN'] = config.getoption('--max-run')
     CONFIG['LOOSE_COMPARE'] = config.getoption('--loose-compare')
     CONFIG['GEOJSON'] = config.getoption('--geojson')
+    CONFIG['CHECK_DUPLICATES'] = config.getoption('--check-duplicates')
     CONFIG['SKIP_XFAIL'] = config.getoption('--skip-xfail')
     if config.getoption('--compare-report'):
         with open(config.getoption('--compare-report')) as f:

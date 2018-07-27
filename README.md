@@ -60,6 +60,9 @@ in yellow instead of red. If you want those known to fail tests not to be run at
 all (thus you'll don't know how many of them now pass), you can use the `--skip-xfail`
 command line argument.
 
+You can also check that there are no duplicates in the 10 first results
+
+    py.test --check-duplicates=10
 
 ## Adding search cases
 
