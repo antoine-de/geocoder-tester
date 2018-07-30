@@ -24,12 +24,30 @@ CONFIG = {
 http = requests.Session()
 
 
-def get_label_for_dupplicates(feature):
-    obj = feature['properties']['geocoding']
-    res = obj.get('label') or feature['name']
+def get_properties(f):
+    if 'geocoding' in f['properties']:
+        return f['properties']['geocoding']
+    else:
+        return f['properties']
+
+
+def get_dupplicates_key(feature):
+    """
+    returns a key used to check if a feature has a dupplicate.
+    This is a bit tuned on how the results are displayed to the end user.
+
+    For the majority of objects we use the label (or name if there is no label) + the type of the object
+    The type is used because for example there can be a POI with the same name as a Stop
+
+    For the POI it's a bit trickier, we also use the address of the POI
+    because there can be for example 2 bars with the same name in the same city
+    """
+    obj = get_properties(feature)
+    lbl = obj.get('label') or feature['name']
     if obj.get('type') == 'poi':
-        res += obj.get('address', {}).get('label', '')
-    return res
+        addr = obj.get('address', {}).get('label', '')
+        return (lbl, obj['type'], addr)
+    return (lbl, obj.get('type'))
 
 
 class HttpSearchException(Exception):
@@ -127,11 +145,7 @@ class SearchException(Exception):
         return json.dumps({'features': self.results})
 
     def flat_result(self, result):
-        out = None
-        if 'geocoding' in result['properties']:
-            out = result['properties']['geocoding']
-        else:
-            out = result['properties']
+        out = get_properties(result)
         if 'geometry' in result:
             out['lat'] = result['geometry']['coordinates'][1]
             out['lon'] = result['geometry']['coordinates'][0]
@@ -182,11 +196,7 @@ def assert_search(query, expected, limit=1,
         nb_found = 0
         for r in results:
             passed = True
-            properties = None
-            if 'geocoding' in r['properties']:
-                properties = r['properties']['geocoding']
-            else:
-                properties = r['properties']
+            properties = get_properties(r)
             failed = properties['failed'] = []
             for key, value in expected.items():
                 value = str(value)
@@ -240,13 +250,7 @@ def assert_search(query, expected, limit=1,
 def check_dupplicates(features, params):
     results = defaultdict(list)
     for f in features:
-        if 'geocoding' in f['properties']:
-            properties = f['properties']['geocoding']
-        else:
-            properties = f['properties']
-        if 'failed' in properties:
-            properties.pop('failed')
-        key = get_label_for_dupplicates(f)
+        key = get_dupplicates_key(f)
         results[key].append(f)
 
     dupplicates = {k: dup for k, dup in results.items() if len(dup) != 1}
