@@ -54,6 +54,10 @@ Then compare when running a new version
 
     py.test --compare-report path/to/report.log
 
+You can also check that there are no dupplicates in the 10 first results
+
+    py.test --check-dupplicates=10
+
 
 ## Adding search cases
 
