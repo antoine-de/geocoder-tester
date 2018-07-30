@@ -1,0 +1,18 @@
+countries:
+  - france
+
+categories:
+  - name: fuzzy
+    selector: fuzzy
+  - name: admins 
+    selector: test_admin
+  - name: poi
+    selector: test_poi
+  - name: autre
+    remaining_tests: True
+
+additional_pytest_args:
+  - "--check-dupplicates=10"
+  - "-n 12"
+  - "--collect-only"
+
