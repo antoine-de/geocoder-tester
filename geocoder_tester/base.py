@@ -69,16 +69,28 @@ class DupplicatesException(Exception):
         self.query = params.pop('q')
 
     def __str__(self):
-        from datadiff import diff
         lines = [
             '',
             'Dupplicates found in the response',
             "# Search was: {}".format(self.query),
         ]
         for key, features in self.dupplicates.items():
-            lines.append('- entry {} has been found for:'.format(key))
-            lines.extend(["{}".format(f) for f in features])
-            lines.append('diff between the first 2: {}'.format(diff(features[0], features[1])))
+            lines.append('## Entry {} has been found for:'.format(key))
+            keys = [
+                'label', 'id', 'type', 'osm_id', 'housenumber', 'street',
+                'postcode', 'city', 'country', 'lat', 'lon', 'addr', 'poi_types'
+            ]
+            def flatten_res(f):
+                r = get_properties(f)
+                coords = f.get('geometry', {}).get('coordinates', [None, None])
+                r['lat'] = coords[1]
+                r['lon'] = coords[0]
+                r['addr'] = r.get('address', {}).get('label')
+                r['poi_types'] = "-".join(t['name'] for t in r.get('poi_types', []))
+                return r
+            results = [flatten_res(f) for f in features]
+            lines.extend(dicts_to_table(results, keys=keys))
+            lines.append('')
 
         return "\n".join(lines)
 
@@ -282,7 +294,7 @@ def dicts_to_table(dicts, keys):
         l = lengths.copy()
         for key in keys:
             value = d.get(key) or '_'
-            if key in d['failed']:
+            if key in d.get('failed', {}):
                 l[key] += 10  # Add ANSI chars so python len will turn out.
                 value = "\033[1;4m{}\033[0m".format(value)
             row[key] = value

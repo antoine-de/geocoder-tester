@@ -14,7 +14,6 @@ geopy = "*"
 unidecode = "*"
 allure-pytest = "*"
 invoke = "*"
-datadiff = "*"
 
 
 [dev-packages]
