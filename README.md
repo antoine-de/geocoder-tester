@@ -101,8 +101,6 @@ command line
 * `lang`: language
 * `skip`: add a `skip` message if you want a test to be always skipped (feature
 not supported yet for example)
-* `max_matches`: maximum number of results that should match expected value.
-Should be used such as `limit` > `max_matches`. (default: no limit)
 
 ### YAML
 
@@ -111,20 +109,3 @@ has the subkeys you want to test against (`name`, `housenumber`…).
 Optional keys: `limit`, `lang`, `lat` and `lon`, `skip`.
 You can add categories to your test by using the key `mark` (which expects a
 list), that you can then run with `-m yourmarker`.
-
-## Generate Allure report
-
-* Install geocoder-tester with pipenv and open a shell in the virtualenv
-
-```bash
-pipenv install
-pipenv shell
-```
-
-* Run some tests via invoke
-
-```bash
-INVOKE_API_URL=http://example.com/autocomplete INVOKE_TESTS_FILES=geocoder_tester/world/france/test_poi.csv invoke -r allure
-```
-
-* Allure report is generated in `allure/allure-report`
