@@ -1,0 +1,11 @@
+query,lon,lat,limit,expected_name,expected_housenumber,expected_street,expected_city,expected_postcode
+Avinguda del Paral·lel 115,,,4,,,Avinguda del Paral·lel,Barcelona,
+Carrer de Numància 34,,,4,,,Carrer de Numància,Barcelona,
+Avinguda Diagonal 211,,,4,,,Avinguda Diagonal,Barcelona,
+Carrer de Còrsega 464 08025 Barcelona,,,4,,,Carrer de Còrsega,Barcelona,
+Carrer de Pi i Margall 45,,,4,,,Carrer de Pi i Margall,Barcelona,
+Av. de Madrid 135,,,4,,,Av. de Madrid,Barcelona,
+Avinguda de Madrid 135,,,4,,,Avinguda de Madrid,Barcelona,
+Carrer de Berlin 8,,,4,,,Carrer de Berlin,Barcelona,
+Travessera de les Corts 263,,,4,,,Travessera de les Corts,Barcelona,
+Carrer del Remei 45,,,4,,,Carrer del Remei,Barcelona,
