@@ -207,7 +207,7 @@ def assert_search(query, expected, limit=1,
     def assert_expected(expected):
         nb_found = 0
         for r in results:
-            passed = True
+            found = True
             properties = get_properties(r)
             failed = properties['failed'] = []
             for key, value in expected.items():
@@ -225,9 +225,9 @@ def assert_search(query, expected, limit=1,
                         if int(deviation.meters) <= int(max_deviation):
                             continue  # Continue to other properties
                         failed.append('distance')
-                    passed = False
+                    found = False
                     failed.append(key)
-            if passed:
+            if found:
                 nb_found += 1
                 if max_matches is None:
                     break
