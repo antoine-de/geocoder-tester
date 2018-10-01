@@ -195,7 +195,7 @@ def assert_search(query, expected, limit=1,
                   comment=None, lang=None, center=None,
                   max_matches=None):
     query_limit = max(CONFIG['CHECK_DUPLICATES'] or 0, int(limit))
-    params = {"q": query, "limit": query_limit}
+    params = {"q": query, "limit": query_limit, "timeout": "5000"}
     if lang:
         params['lang'] = lang
     if center:
